@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#2d6a4f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Get off ya arse!"/>
+<title>Get off ya arse!</title>
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Get off ya arse!&quot;,&quot;short_name&quot;:&quot;Get off ya arse!&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#f0faf4&quot;,&quot;theme_color&quot;:&quot;#2d6a4f&quot;}"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --green-dark: #1a3a2a;
+    --green-mid: #40c878;
+    --green-light: #52d98a;
+    --green-pale: #1a2e22;
+    --teal: #2ec4b6;
+    --amber: #f4c842;
+    --red: #ff4d6d;
+    --red-pale: #2a1520;
+    --purple: #b388ff;
+    --purple-pale: #1e1630;
+    --sky: #4cc9f0;
+    --bg: #0d1117;
+    --card: #161b22;
+    --card2: #1f2937;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border: #2d3748;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  /* NAV */
+  .topbar {
+    background: linear-gradient(135deg, #0d1117, #1a2e22);
+    color: white;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 12px;
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px; }
+  .topbar .date-chip {
+    font-size: 0.75rem; background: rgba(255,255,255,0.2);
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .bottomnav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #161b22; border-top: 1px solid var(--border);
+    display: flex; z-index: 100;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.4);
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 4px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer;
+    font-size: 0.6rem; color: var(--muted); transition: color 0.2s;
+  }
+  .nav-btn .icon { font-size: 1.4rem; line-height: 1; }
+  .nav-btn.active { color: var(--green-mid); font-weight: 600; }
+  /* PAGES */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+  /* CARDS */
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 14px;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+  }
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border-radius: 30px; border: none;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn-green { background: var(--green-mid); color: white; }
+  .btn-green:hover { background: var(--green-dark); }
+  .btn-green:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-red { background: var(--red); color: white; }
+  .btn-outline {
+    background: transparent; color: var(--green-mid);
+    border: 2px solid var(--green-mid);
+  }
+  .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+  .btn-full { width: 100%; justify-content: center; }
+  /* STREAK RING */
+  .streak-ring {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: conic-gradient(var(--green-light) 0%, var(--green-pale) 0%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0;
+  }
+  .streak-ring::before {
+    content: ''; position: absolute; inset: 8px;
+    background: var(--card); border-radius: 50%;
+  }
+  .streak-inner { position: relative; text-align: center; }
+  .streak-num { font-size: 1.4rem; font-weight: 800; color: var(--green-light); line-height: 1; }
+  .streak-label { font-size: 0.55rem; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; }
+  /* TASK CARD */
+  .task-of-day {
+    background: linear-gradient(135deg, #0f2318, #1a3a2a);
+    border: none; border-left: 4px solid var(--green-light);
+  }
+  .task-category {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 20px;
+    margin-bottom: 8px;
+  }
+  .cat-outdoor { background: #0f2318; color: #6ee7a0; }
+  .cat-creative { background: #2a2000; color: #fcd34d; }
+  .cat-mindful { background: var(--purple-pale); color: var(--purple); }
+  .cat-learn { background: #0c2030; color: #67e8f9; }
+  .cat-social { background: #2a0d14; color: #fca5a5; }
+  .cat-health { background: #0f2318; color: #6ee7a0; }
+  .task-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--green-light); }
+  .task-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+  .task-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.8rem; color: var(--green-mid); text-decoration: none;
+    margin-top: 8px; font-weight: 600;
+  }
+  /* HABIT LIST */
+  .habit-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .habit-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .habit-check {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--green-light); background: var(--card2);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; flex-shrink: 0; transition: all 0.2s;
+  }
+  .habit-check.done { background: var(--green-light); border-color: var(--green-light); }
+  .habit-text { flex: 1; }
+  .habit-name { font-size: 0.9rem; font-weight: 600; }
+  .habit-sub { font-size: 0.75rem; color: var(--muted); }
+  .habit-done .habit-name { text-decoration: line-through; color: var(--muted); }
+  /* ALCOHOL */
+  .drink-counter {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .drink-count-display {
+    font-size: 3rem; font-weight: 800; line-height: 1;
+    color: var(--red);
+  }
+  .sober-badge {
+    background: linear-gradient(135deg, #0f2318, #1a3a2a);
+    border-radius: var(--radius); padding: 12px 16px;
+    text-align: center; margin-bottom: 12px;
+    border: 1px solid #2d5a3d;
+  }
+  .sober-badge .days { font-size: 2.2rem; font-weight: 800; color: var(--green-light); }
+  .sober-badge .label { font-size: 0.8rem; color: var(--green-mid); font-weight: 600; }
+  .motivation-msg {
+    font-size: 0.85rem; color: var(--text); font-style: italic;
+    background: #1a1500; padding: 10px 14px; border-radius: var(--radius-sm);
+    border-left: 3px solid var(--amber);
+  }
+  /* MOUNJARO */
+  .injection-timeline { margin-top: 10px; }
+  .inj-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .inj-item:last-child { border-bottom: none; }
+  .inj-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--purple); flex-shrink: 0;
+  }
+  .inj-dose { font-weight: 700; color: var(--purple); }
+  .next-inj-card {
+    background: linear-gradient(135deg, #1e1630, #2a1f45);
+    border-radius: var(--radius-sm); padding: 14px;
+    text-align: center; margin-bottom: 14px;
+    border: 1px solid #3d2e6e;
+  }
+  .next-inj-card .when { font-size: 1.1rem; font-weight: 700; color: var(--purple); }
+  .next-inj-card .label { font-size: 0.75rem; color: var(--muted); }
+  /* MEDITATION */
+  .med-card {
+    background: linear-gradient(135deg, #0c1628, #101e30);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 14px;
+    text-decoration: none; color: inherit; border: 1px solid #1e3a5f;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .med-card:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .med-icon { font-size: 2rem; flex-shrink: 0; }
+  .med-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; }
+  .med-sub { font-size: 0.78rem; color: var(--muted); }
+  .med-duration {
+    margin-left: auto; font-size: 0.7rem; font-weight: 700;
+    background: rgba(255,255,255,0.08); padding: 4px 8px; border-radius: 20px;
+    color: var(--sky); flex-shrink: 0;
+  }
+  /* FORM */
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
+  input, select, textarea {
+    width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); font-size: 0.9rem; background: var(--card2);
+    color: var(--text); outline: none; transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--green-light); }
+  /* PROGRESS BAR */
+  .progress-bar {
+    height: 8px; background: var(--green-pale); border-radius: 4px; overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--green-light), var(--teal));
+    border-radius: 4px; transition: width 0.5s ease;
+  }
+  /* SECTION HEADER */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-header h2 { font-size: 1rem; font-weight: 700; }
+  /* PILLS */
+  .pill {
+    display: inline-flex; align-items: center;
+    font-size: 0.72rem; font-weight: 700; padding: 4px 10px;
+    border-radius: 20px; margin-right: 6px; margin-bottom: 6px;
+  }
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: flex-end; z-index: 200;
+    display: none;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1a1d24; border-radius: 24px 24px 0 0;
+    padding: 24px; width: 100%; max-height: 90vh; overflow-y: auto;
+    border-top: 1px solid var(--border);
+  }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--green-dark); color: white; padding: 10px 20px;
+    border-radius: 30px; font-size: 0.85rem; font-weight: 600;
+    opacity: 0; transition: all 0.3s; z-index: 300; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* IDEA REFRESH */
+  .refresh-btn {
+    background: none; border: none; cursor: pointer; font-size: 1.2rem;
+    padding: 4px; border-radius: 50%; transition: transform 0.3s;
+  }
+  .refresh-btn:active { transform: rotate(180deg); }
+  /* LOCATION TAG */
+  .location-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.72rem; color: var(--green-mid); font-weight: 600;
+    margin-top: 6px;
+  }
+  /* SCROLL SNAP DAYS */
+  .week-scroll {
+    display: flex; gap: 8px; overflow-x: auto; padding: 4px 0;
+    scrollbar-width: none;
+  }
+  .week-scroll::-webkit-scrollbar { display: none; }
+  .day-chip {
+    flex-shrink: 0; width: 44px; text-align: center;
+    padding: 8px 4px; border-radius: 12px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .day-chip .day-name { font-size: 0.65rem; color: var(--muted); font-weight: 600; }
+  .day-chip .day-num { font-size: 1rem; font-weight: 700; }
+  .day-chip .day-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); margin: 3px auto 0; }
+  .day-chip.today { background: var(--green-mid); }
+  .day-chip.today .day-name, .day-chip.today .day-num { color: white; }
+  .day-chip.today .day-dot { background: rgba(255,255,255,0.5); }
+  .day-chip.has-activity .day-dot { background: var(--green-light); }
+  /* XP BAR */
+  .xp-bar-wrap { margin-top: 6px; }
+  .xp-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 4px; }
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 30px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 8px; }
+  .empty-state p { font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <h1>🌿 Get off ya arse!</h1>
+    <div style="font-size:0.72rem;opacity:0.6;margin-top:2px">📍 Murray Bridge, SA</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span id="syncStatus" title="Sync status" style="font-size:1rem;cursor:default;">☁️</span>
+    <div class="date-chip" id="topDate"></div>
+    <button onclick="openSettings()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer;padding:2px 4px;" title="Settings">⚙️</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>⚙️ Cloud Sync — Supabase</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;line-height:1.5;">
+      Connect to Supabase so your data syncs between your iPhone and laptop automatically.
+    </p>
+    <div id="syncStatusBanner" style="display:none;padding:10px 14px;border-radius:10px;font-size:0.82rem;margin-bottom:14px;"></div>
+    <div class="form-group">
+      <label>Supabase Project URL</label>
+      <input type="text" id="sbUrl" placeholder="https://xxxxxxxxxxxx.supabase.co" autocomplete="off" autocapitalize="none"/>
+    </div>
+    <div class="form-group">
+      <label>Supabase Anon Key</label>
+      <input type="text" id="sbKey" placeholder="eyJhbGciOi..." autocomplete="off" autocapitalize="none"/>
+    </div>
+    <button class="btn btn-green btn-full" onclick="saveSupabaseConfig()" style="margin-bottom:10px;">
+      🔗 Connect & Sync
+    </button>
+    <button class="btn btn-outline btn-full" onclick="closeSettings()" style="margin-bottom:14px;">
+      Cancel
+    </button>
+    <div style="background:#0d1117;border-radius:10px;padding:12px;font-size:0.78rem;color:var(--muted);line-height:1.6;border:1px solid var(--border);">
+      <strong>How to get these details:</strong><br>
+      1. Go to <a href="https://supabase.com" target="_blank" style="color:var(--green-mid);">supabase.com</a> → Sign up free<br>
+      2. Create a new project (any name)<br>
+      3. Go to <strong>Settings → API</strong><br>
+      4. Copy <em>Project URL</em> and <em>anon public</em> key<br>
+      5. Paste them above and tap Connect<br><br>
+      <strong>One-time database setup:</strong><br>
+      In Supabase → <strong>SQL Editor</strong>, run:<br>
+      <code style="background:#0f2318;padding:6px 8px;border-radius:6px;display:block;margin-top:6px;font-size:0.75rem;word-break:break-all;color:#6ee7a0;">
+create table if not exists app_data (
+  user_id text primary key,
+  data jsonb not null default '{}',
+  updated_at timestamptz default now()
+);<br>
+alter table app_data enable row level security;<br>
+create policy "Allow all" on app_data
+  for all using (true) with check (true);
+      </code>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- PAGES -->
+
+<!-- ============ HOME ============ -->
+<div class="page active" id="page-home">
+
+  <!-- Streak + XP -->
+  <div class="card" style="display:flex;gap:16px;align-items:center;">
+    <div class="streak-ring" id="streakRing">
+      <div class="streak-inner">
+        <div class="streak-num" id="streakNum">0</div>
+        <div class="streak-label">DAY STREAK</div>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:1rem;font-weight:700;" id="greetingText">Good morning, Kirstie! 👋</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin:2px 0 6px;" id="streakMsg">Start your streak today!</div>
+      <div class="xp-bar-wrap">
+        <div class="xp-label">
+          <span>Today's progress</span>
+          <span id="xpLabel">0 / 5 habits</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="xpFill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week view -->
+  <div class="card" style="padding:14px 18px;">
+    <div class="card-title">This Week</div>
+    <div class="week-scroll" id="weekScroll"></div>
+  </div>
+
+  <!-- Task of the Day -->
+  <div class="section-header">
+    <h2>⭐ Task of the Day</h2>
+    <button class="refresh-btn" onclick="refreshDailyTask()" title="New task">🔄</button>
+  </div>
+  <div id="dailyTaskCard"></div>
+
+  <!-- Quick Habits -->
+  <div class="section-header" style="margin-top:4px;">
+    <h2>✅ Daily Habits</h2>
+    <span style="font-size:0.75rem;color:var(--muted);" id="habitSummary">0 done</span>
+  </div>
+  <div class="card">
+    <div id="habitList"></div>
+  </div>
+
+  <!-- Sober streak mini -->
+  <div class="card" id="soberMiniCard" style="background:linear-gradient(135deg,#0f2318,#1a3a2a);border-color:#2d5a3d;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:2rem;">🚫🍺</div>
+      <div>
+        <div style="font-weight:700;font-size:1rem;color:var(--green-dark);" id="soberMiniDays">Loading...</div>
+        <div style="font-size:0.75rem;color:var(--green-mid);" id="soberMiniMsg"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ IDEAS ============ -->
+<div class="page" id="page-ideas">
+  <div class="section-header" style="margin-bottom:6px;">
+    <h2>💡 Daily Ideas for Murray Bridge</h2>
+    <button class="refresh-btn" onclick="loadIdeas()" title="Shuffle ideas">🔀</button>
+  </div>
+  <p style="font-size:0.8rem;color:var(--muted);margin-bottom:14px;">Location-based activities, things to learn & ways to grow 🌱</p>
+  <div id="ideasGrid"></div>
+</div>
+
+<!-- ============ WELLNESS ============ -->
+<div class="page" id="page-wellness">
+  <!-- Meditation -->
+  <div class="section-header">
+    <h2>🧘 Meditation & Mindfulness</h2>
+  </div>
+  <p style="font-size:0.8rem;color:var(--muted);margin-bottom:14px;">Tap any card to start a session</p>
+
+  <a class="med-card" href="https://www.youtube.com/watch?v=ZToicYcHIOU" target="_blank">
+    <div class="med-icon">🌅</div>
+    <div>
+      <div class="med-title">Morning Calm Meditation</div>
+      <div class="med-sub">Gentle start to your day</div>
+    </div>
+    <div class="med-duration">10 min</div>
+  </a>
+
+  <a class="med-card" href="https://www.youtube.com/watch?v=inpok4MKVLM" target="_blank">
+    <div class="med-icon">🌬️</div>
+    <div>
+      <div class="med-title">5-Minute Breathing Exercise</div>
+      <div class="med-sub">Box breathing for stress relief</div>
+    </div>
+    <div class="med-duration">5 min</div>
+  </a>
+
+  <a class="med-card" href="https://www.youtube.com/watch?v=1ZYbU82GVz4" target="_blank">
+    <div class="med-icon">🧠</div>
+    <div>
+      <div class="med-title">Body Scan Relaxation</div>
+      <div class="med-sub">Release tension head to toe</div>
+    </div>
+    <div class="med-duration">20 min</div>
+  </a>
+
+  <a class="med-card" href="https://www.youtube.com/watch?v=t1rRo6cgM_E" target="_blank">
+    <div class="med-icon">😴</div>
+    <div>
+      <div class="med-title">Sleep Meditation</div>
+      <div class="med-sub">Drift into restful sleep</div>
+    </div>
+    <div class="med-duration">30 min</div>
+  </a>
+
+  <a class="med-card" href="https://www.headspace.com" target="_blank">
+    <div class="med-icon">🎧</div>
+    <div>
+      <div class="med-title">Headspace App</div>
+      <div class="med-sub">Guided meditation courses</div>
+    </div>
+    <div class="med-duration">Free tier</div>
+  </a>
+
+  <a class="med-card" href="https://insighttimer.com" target="_blank">
+    <div class="med-icon">⏱️</div>
+    <div>
+      <div class="med-title">Insight Timer</div>
+      <div class="med-sub">Free library of 100,000+ sessions</div>
+    </div>
+    <div class="med-duration">Free</div>
+  </a>
+
+  <!-- Breathing timer -->
+  <div class="card" style="margin-top:8px;">
+    <div class="card-title">Quick Breathing Timer</div>
+    <div style="text-align:center;padding:16px 0;">
+      <div id="breathCircle" style="
+        width:100px;height:100px;border-radius:50%;
+        background:radial-gradient(circle, #a8d8ea, #4cc9f0);
+        margin:0 auto 14px;display:flex;align-items:center;justify-content:center;
+        font-weight:700;font-size:0.9rem;color:white;
+        transition:transform 4s ease;
+      ">Press Start</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;" id="breathPhase">4-4-4-4 box breathing</div>
+      <button class="btn btn-green" onclick="startBreathing()">Start</button>
+      <button class="btn btn-outline" onclick="stopBreathing()" style="margin-left:8px;">Stop</button>
+    </div>
+  </div>
+
+  <!-- Learn links -->
+  <div class="section-header" style="margin-top:4px;">
+    <h2>📚 Learn Something New</h2>
+  </div>
+  <div id="learnLinks"></div>
+</div>
+
+<!-- ============ ALCOHOL ============ -->
+<div class="page" id="page-alcohol">
+  <div class="section-header">
+    <h2>🚫 Alcohol Tracker</h2>
+  </div>
+
+  <div class="sober-badge">
+    <div class="days" id="soberDays">0</div>
+    <div class="label">🎉 Alcohol-free days this streak</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Today</div>
+    <div class="drink-counter">
+      <div>
+        <div style="font-size:0.85rem;color:var(--muted);">Drinks logged today</div>
+        <div class="drink-count-display" id="drinkCount">0</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-red btn-sm" onclick="addDrink()">+ Log Drink</button>
+        <button class="btn btn-outline btn-sm" onclick="removeDrink()">- Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="motivation-msg" id="drinkMotivation">
+    💪 Every alcohol-free day is a win for your health, your wallet, and your Mounjaro journey!
+  </div>
+
+  <!-- Why quit benefits -->
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title">Why It's Worth It 💚</div>
+    <div id="benefitsDisplay"></div>
+  </div>
+
+  <!-- Weekly log -->
+  <div class="card" style="margin-top:0;">
+    <div class="card-title">7-Day Log</div>
+    <div id="weeklyDrinkLog"></div>
+  </div>
+
+  <div style="text-align:center;margin-top:16px;">
+    <a href="https://www.hellosundaymorning.org" target="_blank" class="btn btn-outline btn-full" style="margin-bottom:10px;">
+      🌞 Hello Sunday Morning — Free Support
+    </a>
+    <a href="tel:1800250015" class="btn btn-outline btn-full">
+      📞 DrinkWise Helpline 1800 250 015
+    </a>
+  </div>
+</div>
+
+<!-- ============ MOUNJARO ============ -->
+<div class="page" id="page-mounjaro">
+  <div class="section-header">
+    <h2>💉 Mounjaro Tracker</h2>
+  </div>
+
+  <div class="next-inj-card" id="nextInjCard">
+    <div class="label">Next injection due</div>
+    <div class="when" id="nextInjDate">—</div>
+    <div style="font-size:0.75rem;color:#666;margin-top:4px;" id="nextInjCountdown"></div>
+  </div>
+
+  <!-- Log form -->
+  <div class="card">
+    <div class="card-title">Log Injection</div>
+    <div class="form-group">
+      <label>Date & Time</label>
+      <input type="datetime-local" id="injDateTime"/>
+    </div>
+    <div class="form-group">
+      <label>Dose</label>
+      <select id="injDose">
+        <option value="2.5">2.5 mg</option>
+        <option value="5">5 mg</option>
+        <option value="7.5">7.5 mg</option>
+        <option value="10">10 mg</option>
+        <option value="12.5">12.5 mg</option>
+        <option value="15">15 mg</option>
+      </select>
+    </div>
+    <button class="btn btn-green btn-full" onclick="logInjection()">💉 Save Injection</button>
+  </div>
+
+  <!-- Info card -->
+  <div class="card" style="background:#f3e5f5;border-color:#ce93d8;">
+    <div class="card-title" style="color:#7b1fa2;">Mounjaro Info</div>
+    <div style="font-size:0.82rem;color:#444;line-height:1.6;">
+      • Inject <strong>once per week</strong>, same day each week<br>
+      • Rotate injection sites: abdomen, thigh, upper arm<br>
+      • Store in fridge (2–8°C) until use<br>
+      • Pairs well with reduced alcohol consumption ✅<br>
+      • Always consult your GP before changing doses
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="section-header" style="margin-top:4px;">
+    <h2>📋 Injection History</h2>
+    <button class="btn btn-sm btn-outline" onclick="clearInjections()" style="font-size:0.7rem;padding:4px 10px;">Clear all</button>
+  </div>
+  <div class="card">
+    <div class="injection-timeline" id="injectionHistory">
+      <div class="empty-state"><div class="icon">💉</div><p>No injections logged yet</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL for logging drink reason -->
+<div class="modal-overlay" id="drinkModal">
+  <div class="modal">
+    <h3>Log a drink 🍺</h3>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">Taking a moment to check in with yourself...</p>
+    <div class="form-group">
+      <label>What triggered this? (optional)</label>
+      <select id="drinkTrigger">
+        <option value="">Prefer not to say</option>
+        <option value="stress">Stress / Anxiety</option>
+        <option value="social">Social situation</option>
+        <option value="boredom">Boredom</option>
+        <option value="habit">Old habit</option>
+        <option value="celebration">Celebration</option>
+      </select>
+    </div>
+    <div class="motivation-msg" style="margin-bottom:16px;" id="modalMotivation"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeDrinkModal()">Cancel</button>
+      <button class="btn btn-red" style="flex:1;" onclick="confirmDrink()">Log it</button>
+    </div>
+  </div>
+</div>
+
+<nav class="bottomnav">
+  <button class="nav-btn active" onclick="showPage('home',this)">
+    <span class="icon">🏠</span>Home
+  </button>
+  <button class="nav-btn" onclick="showPage('ideas',this)">
+    <span class="icon">💡</span>Ideas
+  </button>
+  <button class="nav-btn" onclick="showPage('wellness',this)">
+    <span class="icon">🧘</span>Wellness
+  </button>
+  <button class="nav-btn" onclick="showPage('alcohol',this)">
+    <span class="icon">🚫🍺</span>Alcohol
+  </button>
+  <button class="nav-btn" onclick="showPage('mounjaro',this)">
+    <span class="icon">💉</span>Mounjaro
+  </button>
+</nav>
+
+<script>
+// ============================================================
+//  DATA
+// ============================================================
+const TASKS = [
+  // OUTDOOR — Murray Bridge specific
+  { cat:'outdoor', emoji:'🌊', title:'Walk to the Murray River', desc:'Stroll down to the river bank and take a photo of the water. Find something beautiful you haven\'t noticed before.', loc:'Murray River Frontage' },
+  { cat:'outdoor', emoji:'🌉', title:'Cross the Swinging Bridge', desc:'Walk across the historic Swinging Bridge and back. Notice the sounds and sights of the Murray.', loc:'Swinging Bridge, Murray Bridge' },
+  { cat:'outdoor', emoji:'🦘', title:'Spot wildlife along the river', desc:'Spend 20 minutes quietly near the river bank looking for birds, fish or lizards. Take photos of what you find!', loc:'Murray River, Murray Bridge' },
+  { cat:'outdoor', emoji:'🌳', title:'Explore Sturt Reserve', desc:'Visit Sturt Reserve for a walk. Bring water and take 3 photos of interesting plants or animals.', loc:'Sturt Reserve, Murray Bridge' },
+  { cat:'outdoor', emoji:'🦁', title:'Plan a Monarto Safari Park visit', desc:'One of the world\'s largest open range zoos is just up the road — research it today and pick a date to go!', link:'https://www.monartosafaripark.com.au', linkText:'Book tickets', loc:'Monarto Safari Park' },
+  { cat:'outdoor', emoji:'🌅', title:'Sunrise walk', desc:'Set your alarm early and take a 20-minute walk to watch the sunrise over Murray Bridge. Pure magic.', loc:'Murray Bridge' },
+  { cat:'outdoor', emoji:'🚴', title:'Bike the river trail', desc:'Ride the bike path along the river. Even 15 minutes counts! Feel the breeze and notice your surroundings.', loc:'Murray Bridge River Trail' },
+  { cat:'outdoor', emoji:'🌿', title:'Find a street you\'ve never walked', desc:'Explore a road or path in Murray Bridge you\'ve never been down before. See where it takes you.', loc:'Murray Bridge' },
+  { cat:'outdoor', emoji:'🏊', title:'Visit the Aquatic Centre', desc:'Take a swim at the Murray Bridge Aquatic Centre — brilliant for your body and mind.', link:'https://www.murraybridgeaquatic.com.au', linkText:'Pool info', loc:'Murray Bridge Aquatic Centre' },
+  { cat:'outdoor', emoji:'🌺', title:'Botanic Garden wander', desc:'Spend 30 minutes in the Murray Bridge Botanic Garden. Find the oldest tree and photograph it.', loc:'Murray Bridge Botanic Garden' },
+  { cat:'outdoor', emoji:'🎣', title:'Visit the riverbank at sunset', desc:'Head to the Murray River at golden hour. Sit for 15 minutes and just watch the light change on the water.', loc:'Murray River, Murray Bridge' },
+  { cat:'outdoor', emoji:'🌾', title:'Drive the Murraylands backroads', desc:'Pick a country road you\'ve not driven and explore the Murraylands landscape for 30 minutes.', loc:'Murraylands, SA' },
+  { cat:'outdoor', emoji:'🦅', title:'Birdwatching session', desc:'Murray Bridge is rich in birdlife — take a quiet walk and count how many different birds you spot. Use the Merlin app to ID them!', link:'https://merlin.allaboutbirds.org', linkText:'Merlin Bird ID app', loc:'Murray River area' },
+  // CREATIVE
+  { cat:'creative', emoji:'🎨', title:'Draw something in front of you', desc:'Grab any paper and pen. Spend 10 minutes sketching something nearby. No skill needed — it\'s the act that counts!', link:'https://www.youtube.com/watch?v=7TXEZ4tP06c', linkText:'Drawing for beginners' },
+  { cat:'creative', emoji:'📸', title:'Intentional photo walk', desc:'Take 10 photos with a theme: textures, shadows, reflections, or colour. Murray Bridge is full of great shots.', loc:'Murray Bridge' },
+  { cat:'creative', emoji:'✍️', title:'Free-write for 10 minutes', desc:'Write without stopping or editing — just let it flow. About your day, a memory, or anything at all.', link:'https://www.youtube.com/watch?v=wopdrIqCons', linkText:'About journaling' },
+  { cat:'creative', emoji:'🎵', title:'Make a feel-good playlist', desc:'Create a playlist of 10 songs that represent where you are in life right now. Give it a meaningful title.', link:'https://open.spotify.com', linkText:'Open Spotify' },
+  { cat:'creative', emoji:'🍳', title:'Cook a brand new recipe', desc:'Pick something you\'ve never cooked before. Photograph the result — even if it goes wrong!', link:'https://www.taste.com.au', linkText:'Find a recipe' },
+  { cat:'creative', emoji:'🌸', title:'Start a nature journal', desc:'Collect a flower, leaf or feather from outside and press it in a book. One page of your own nature journal.', loc:'Murray Bridge parks' },
+  { cat:'creative', emoji:'🎭', title:'Learn one new word today', desc:'Find a word you don\'t know, write its definition and use it in a sentence before the day ends.', link:'https://www.wordnik.com', linkText:'Word of the day' },
+  { cat:'creative', emoji:'🖼️', title:'Rearrange one thing at home', desc:'Move a piece of furniture, rehang a photo, or style a shelf differently. Small changes refresh your space and mind.', link:null },
+  { cat:'creative', emoji:'💌', title:'Write a letter or card', desc:'Write a handwritten note to someone — a friend, family member, or even your future self. Post it or keep it.', link:null },
+  // WELLNESS — from the Wellness tab
+  { cat:'mindful', emoji:'🧘', title:'10-minute guided meditation', desc:'Open the Wellness tab and tap any guided session. Even 10 minutes has measurable benefits for stress and clarity.', link:'https://insighttimer.com', linkText:'Open Insight Timer' },
+  { cat:'mindful', emoji:'🫁', title:'Box breathing session', desc:'Open the Wellness tab and complete a full 5-minute box breathing timer session. 4 in, 4 hold, 4 out, 4 hold.', link:null },
+  { cat:'mindful', emoji:'😴', title:'Sleep meditation tonight', desc:'Before bed, play a sleep meditation from the Wellness tab. Fall asleep with intention.', link:'https://www.youtube.com/watch?v=t1rRo6cgM_E', linkText:'Sleep meditation (30 min)' },
+  { cat:'mindful', emoji:'🌬️', title:'5-minute breathing exercise', desc:'Sit comfortably, close your eyes and follow a breathing video. Just 5 minutes to reset your nervous system.', link:'https://www.youtube.com/watch?v=inpok4MKVLM', linkText:'Box breathing video' },
+  { cat:'mindful', emoji:'🌅', title:'Morning calm session', desc:'Start the day with a 10-minute morning meditation before you look at your phone. Set the tone for the whole day.', link:'https://www.youtube.com/watch?v=ZToicYcHIOU', linkText:'Morning calm (10 min)' },
+  { cat:'mindful', emoji:'🧠', title:'Body scan relaxation', desc:'Lie down and do a full body scan — notice every part of your body without judgement. Deep rest in 20 minutes.', link:'https://www.youtube.com/watch?v=1ZYbU82GVz4', linkText:'Body scan (20 min)' },
+  { cat:'mindful', emoji:'🌸', title:'Gratitude list — go deep', desc:'Write down 5 things you\'re grateful for and for each one, write WHY. Depth matters more than length.', link:null },
+  { cat:'mindful', emoji:'🌙', title:'1-hour digital detox', desc:'Put your phone away for one full hour. No scrolling, no checking. Just be present in your own life.', link:null },
+  { cat:'mindful', emoji:'📝', title:'Evening reflection', desc:'Before bed, write 3 sentences: What went well today? What was hard? What do I want from tomorrow?', link:null },
+  { cat:'mindful', emoji:'☕', title:'Mindful cup of tea', desc:'Make a tea or coffee and drink it slowly without your phone. Notice the taste, warmth, and the moment.', link:null },
+  { cat:'mindful', emoji:'🎧', title:'Try Headspace for a day', desc:'Sign up for the free tier of Headspace and complete one beginner session today.', link:'https://www.headspace.com', linkText:'Open Headspace' },
+  // LEARN
+  { cat:'learn', emoji:'📖', title:'Read for 20 minutes', desc:'Pick up any book or article and read uninterrupted for 20 minutes. No phone, no TV. Just you and words.', link:'https://www.overdrive.com', linkText:'Free library ebooks' },
+  { cat:'learn', emoji:'🌏', title:'Learn about Ngarrindjeri Country', desc:'Murray Bridge sits on Ngarrindjeri Country. Spend 10 minutes learning about the traditional custodians of this land.', link:'https://www.ngarrindjeri.com.au', linkText:'Ngarrindjeri Nation' },
+  { cat:'learn', emoji:'🔬', title:'Watch a mini documentary', desc:'Find a 20-minute documentary on a topic you know nothing about. Broaden your world today.', link:'https://www.youtube.com/results?search_query=mini+documentary', linkText:'Find mini documentaries' },
+  { cat:'learn', emoji:'🧮', title:'Do a brain puzzle', desc:'Challenge your mind with a crossword, Sudoku, or logic puzzle for 15 minutes.', link:'https://www.nytimes.com/crosswords', linkText:'NYT Crossword (free)' },
+  { cat:'learn', emoji:'🌱', title:'One new Murray River fact', desc:'The Murray is one of Australia\'s most vital waterways. Read one fact today you didn\'t know before.', link:'https://www.murraydarling.com.au', linkText:'Murray-Darling info' },
+  { cat:'learn', emoji:'💻', title:'Watch a how-to video', desc:'Learn one practical skill from YouTube — a cooking technique, a life hack, something with your hands.', link:'https://www.youtube.com', linkText:'YouTube how-to' },
+  { cat:'learn', emoji:'💬', title:'Watch a TED Talk', desc:'Pick any TED Talk under 15 minutes on a topic that intrigues you. Let an idea change your day.', link:'https://www.ted.com/talks', linkText:'Browse TED Talks' },
+  { cat:'learn', emoji:'🌍', title:'Start learning a language', desc:'Try Duolingo for just 5 minutes — it\'s free and addictive. Even a few words a day adds up.', link:'https://www.duolingo.com', linkText:'Open Duolingo' },
+  { cat:'learn', emoji:'🏫', title:'Browse a free TAFE SA course', desc:'See what free or low-cost courses are available online through TAFE SA. One might surprise you.', link:'https://tafeconnect.tafesa.edu.au', linkText:'TAFE SA Online' },
+  // SOCIAL / HEALTH
+  { cat:'social', emoji:'📞', title:'Call someone you care about', desc:'Ring a friend or family member you haven\'t spoken to in a while. Just to say hi — it means more than you think.', link:null },
+  { cat:'health', emoji:'🏃', title:'30-minute walk anywhere', desc:'Any walk counts. Put on a podcast, music, or just listen to the world around you for 30 minutes.', link:null },
+  { cat:'health', emoji:'😴', title:'Prioritise sleep tonight', desc:'Set a bedtime alarm for 10pm. Aim for 7–8 hours. Good sleep is the foundation of every other habit.', link:null },
+  { cat:'health', emoji:'🥗', title:'Add one extra vegetable today', desc:'Add a vegetable to your next meal that you wouldn\'t normally include. Small wins build big habits.', link:null },
+  { cat:'health', emoji:'🦷', title:'Full self-care routine', desc:'Do your complete routine — shower, skin care, nails, whatever makes you feel cared for. You deserve it.', link:null },
+  { cat:'health', emoji:'🧴', title:'Stretch for 10 minutes', desc:'Follow a simple YouTube stretching routine. Your body will thank you, especially with Mounjaro supporting your journey.', link:'https://www.youtube.com/results?search_query=10+minute+morning+stretch', linkText:'Find a stretch video' },
+];
+
+const LEARN_LINKS = [
+  { title:'Khan Academy (free courses)', url:'https://www.khanacademy.org', emoji:'📐', desc:'Maths, science, computing & more' },
+  { title:'Duolingo — Learn a language', url:'https://www.duolingo.com', emoji:'🌍', desc:'Free language learning, 5 min/day' },
+  { title:'Coursera', url:'https://www.coursera.org', emoji:'🎓', desc:'University-level free courses' },
+  { title:'YouTube Learning Hub', url:'https://www.youtube.com/learning', emoji:'▶️', desc:'Curated educational videos' },
+  { title:'TED Talks', url:'https://www.ted.com/talks', emoji:'💬', desc:'Ideas worth spreading, 15 min talks' },
+  { title:'ABC Education', url:'https://education.abc.net.au', emoji:'📺', desc:'Australian educational content' },
+  { title:'TAFE SA Online', url:'https://tafeconnect.tafesa.edu.au', emoji:'🏫', desc:'Free and low-cost SA courses' },
+  { title:'Project Gutenberg', url:'https://www.gutenberg.org', emoji:'📚', desc:'Free classic ebooks' },
+];
+
+const DRINK_MOTIVATIONS = [
+  "💪 You're on Mounjaro — alcohol can reduce its effectiveness and cause nausea. Your health journey matters!",
+  "💰 The average Australian spends $2,000+ per year on alcohol. What could you do with that money?",
+  "😴 Alcohol disrupts your sleep cycle even if it feels like it helps you fall asleep.",
+  "🧠 Your brain literally gets sharper with every alcohol-free day. Clarity is coming!",
+  "❤️ Your heart, liver, and gut are healing every single day you choose not to drink.",
+  "🌟 You're building a new identity — someone who looks after themselves. That person doesn't need alcohol.",
+  "🏃 How do you want to feel on your morning walk tomorrow? Choose that feeling tonight.",
+  "🎯 Every craving only lasts 15–20 minutes. You can outlast it. Go for a walk, drink water, or call someone.",
+  "🌿 Alcohol is a depressant — it can worsen anxiety and low moods the next day.",
+  "💉 Alcohol and Mounjaro together can increase your risk of pancreatitis. Your doctor would agree — skip it.",
+];
+
+const BENEFITS = [
+  { days: 1, icon:'⚡', text:'After 24 hours: Blood sugar stabilises, hydration improves' },
+  { days: 3, icon:'😴', text:'After 3 days: Sleep quality noticeably improves' },
+  { days: 7, icon:'✨', text:'After 1 week: Skin looks clearer, energy levels rise' },
+  { days: 14, icon:'🧠', text:'After 2 weeks: Brain fog clears, sharper thinking' },
+  { days: 30, icon:'❤️', text:'After 1 month: Blood pressure drops, liver function improves' },
+  { days: 90, icon:'🌟', text:'After 3 months: Significant weight loss improvements' },
+  { days: 365, icon:'🏆', text:'After 1 year: Heart disease risk drops by 25%' },
+];
+
+// ============================================================
+//  SUPABASE SYNC
+// ============================================================
+let _supabase = null;
+let _syncDebounce = null;
+const USER_ID = 'kirstie';
+
+function initSupabase() {
+  const cfg = getSbConfig();
+  if (cfg && cfg.url && cfg.key) {
+    try {
+      _supabase = window.supabase.createClient(cfg.url, cfg.key);
+      setSyncIcon('☁️');
+      return true;
+    } catch(e) { _supabase = null; }
+  }
+  setSyncIcon('⬜');
+  return false;
+}
+
+function getSbConfig() {
+  try { return JSON.parse(localStorage.getItem('sbConfig') || 'null'); }
+  catch(e) { return null; }
+}
+
+function setSyncIcon(icon, title) {
+  const el = document.getElementById('syncStatus');
+  if (el) { el.textContent = icon; if (title) el.title = title; }
+}
+
+async function loadStateFromCloud() {
+  if (!_supabase) return null;
+  try {
+    setSyncIcon('🔄', 'Loading from cloud...');
+    const { data, error } = await _supabase
+      .from('app_data').select('data').eq('user_id', USER_ID).maybeSingle();
+    if (error) { setSyncIcon('⚠️', 'Sync error: ' + error.message); return null; }
+    if (!data) { setSyncIcon('☁️', 'Connected — no data yet'); return null; }
+    setSyncIcon('✅', 'Synced');
+    setTimeout(() => setSyncIcon('☁️', 'Connected'), 2000);
+    return data.data;
+  } catch(e) { setSyncIcon('⚠️', 'Offline'); return null; }
+}
+
+async function pushStateToCloud(s) {
+  if (!_supabase) return;
+  try {
+    setSyncIcon('🔄', 'Saving...');
+    const { error } = await _supabase.from('app_data').upsert({
+      user_id: USER_ID, data: s, updated_at: new Date().toISOString()
+    });
+    if (error) { setSyncIcon('⚠️', 'Save failed: ' + error.message); return; }
+    setSyncIcon('✅', 'Saved to cloud');
+    setTimeout(() => setSyncIcon('☁️', 'Connected'), 2000);
+  } catch(e) { setSyncIcon('⚠️', 'Offline — saved locally'); }
+}
+
+// Settings modal helpers
+function openSettings() {
+  const cfg = getSbConfig() || {};
+  document.getElementById('sbUrl').value = cfg.url || '';
+  document.getElementById('sbKey').value = cfg.key || '';
+  document.getElementById('syncStatusBanner').style.display = 'none';
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+async function saveSupabaseConfig() {
+  const url = document.getElementById('sbUrl').value.trim();
+  const key = document.getElementById('sbKey').value.trim();
+  const banner = document.getElementById('syncStatusBanner');
+  if (!url || !key) {
+    banner.style.display = 'block';
+    banner.style.background = '#ffe0e0';
+    banner.textContent = '⚠️ Please enter both the URL and anon key.';
+    return;
+  }
+  localStorage.setItem('sbConfig', JSON.stringify({ url, key }));
+  initSupabase();
+  banner.style.display = 'block';
+  banner.style.background = '#e8f5e9';
+  banner.textContent = '🔄 Testing connection...';
+  const cloud = await loadStateFromCloud();
+  if (cloud) {
+    applyDefaults(cloud);
+    state = cloud;
+    localStorage.setItem('mbWellbeing', JSON.stringify(state));
+    banner.textContent = '✅ Connected! Your cloud data has been loaded.';
+    setTimeout(() => { closeSettings(); renderAll(); }, 1500);
+  } else {
+    // Push local state up to cloud
+    await pushStateToCloud(state);
+    banner.textContent = '✅ Connected! Your local data has been synced to the cloud.';
+    setTimeout(() => closeSettings(), 1500);
+  }
+}
+
+// ============================================================
+//  STATE & STORAGE
+// ============================================================
+function loadStateLocal() {
+  try { return JSON.parse(localStorage.getItem('mbWellbeing') || '{}'); }
+  catch(e) { return {}; }
+}
+
+function applyDefaults(s) {
+  if (!s.habits)    s.habits    = {};
+  if (!s.drinks)    s.drinks    = {};
+  if (!s.soberSince) s.soberSince = null;
+  if (!s.injections) s.injections = [];
+  if (!s.streak)    s.streak    = { count: 0, lastDate: null };
+  if (!s.taskIndex) s.taskIndex = {};
+  return s;
+}
+
+function saveState(s) {
+  localStorage.setItem('mbWellbeing', JSON.stringify(s));
+  // Debounce cloud saves by 1.5s to avoid hammering on rapid taps
+  clearTimeout(_syncDebounce);
+  _syncDebounce = setTimeout(() => pushStateToCloud(s), 1500);
+}
+
+let state = applyDefaults(loadStateLocal());
+const today = new Date().toISOString().split('T')[0];
+
+function renderAll() {
+  renderWeek();
+  renderDailyTask();
+  renderHabits();
+  updateStreak();
+  renderAlcohol();
+  renderMounjaro();
+  loadIdeas();
+}
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function fmt(dt) {
+  return new Date(dt).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
+}
+function fmtFull(dt) {
+  return new Date(dt).toLocaleString('en-AU', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+function daysBetween(a, b) {
+  return Math.floor((new Date(b) - new Date(a)) / 86400000);
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ============================================================
+//  NAV
+// ============================================================
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ============================================================
+//  TOP BAR
+// ============================================================
+function initTopBar() {
+  const d = new Date();
+  document.getElementById('topDate').textContent =
+    d.toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
+  const h = d.getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greetingText').textContent = greet + ', Kirstie! ' + (h < 12 ? '☀️' : h < 17 ? '🌤️' : '🌙');
+}
+
+// ============================================================
+//  STREAK
+// ============================================================
+function updateStreak() {
+  const s = state.streak;
+  // check if habits were completed yesterday
+  const todayHabits = state.habits[today] || [];
+  const completedToday = HABIT_DEFS.filter(h => todayHabits.includes(h.id)).length;
+
+  // update ring
+  const pct = Math.min(100, (s.count / 30) * 100);
+  const ring = document.getElementById('streakRing');
+  ring.style.background = `conic-gradient(var(--green-light) ${pct}%, var(--green-pale) ${pct}%)`;
+  document.getElementById('streakNum').textContent = s.count;
+
+  const msgs = [
+    'Start your streak today! 🌱',
+    'One day down — you\'re doing it! 🌟',
+    '3 days strong! Keep going! 💪',
+    'A whole week! You\'re unstoppable! 🔥',
+    '2 weeks! This is becoming a lifestyle! 🌿',
+    'One month! You\'re incredible! 🏆',
+  ];
+  const idx = s.count === 0 ? 0 : s.count <= 1 ? 1 : s.count <= 3 ? 2 : s.count <= 7 ? 3 : s.count <= 14 ? 4 : 5;
+  document.getElementById('streakMsg').textContent = msgs[idx];
+}
+
+function updateStreakFromHabits() {
+  const todayDone = state.habits[today] || [];
+  if (todayDone.length >= 3) {
+    const s = state.streak;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (s.lastDate === today) return; // already counted today
+    if (s.lastDate === yesterday || s.lastDate === null) {
+      s.count++;
+    } else if (s.lastDate !== today) {
+      s.count = 1;
+    }
+    s.lastDate = today;
+    saveState(state);
+    updateStreak();
+  }
+}
+
+// ============================================================
+//  WEEK VIEW
+// ============================================================
+function renderWeek() {
+  const wrap = document.getElementById('weekScroll');
+  wrap.innerHTML = '';
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  for (let i = -3; i <= 3; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+    const isToday = i === 0;
+    const hasActivity = (state.habits[dateStr] || []).length >= 2;
+    const chip = document.createElement('div');
+    chip.className = 'day-chip' + (isToday ? ' today' : '') + (hasActivity ? ' has-activity' : '');
+    chip.innerHTML = `<div class="day-name">${dayNames[d.getDay()]}</div><div class="day-num">${d.getDate()}</div><div class="day-dot"></div>`;
+    wrap.appendChild(chip);
+  }
+  // scroll to center (today)
+  setTimeout(() => {
+    const chips = wrap.querySelectorAll('.day-chip');
+    const todayChip = chips[3];
+    if (todayChip) todayChip.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  }, 100);
+}
+
+// ============================================================
+//  DAILY TASK — no-repeat queue
+// ============================================================
+function buildQueue() {
+  // Fisher-Yates shuffle of all task indices
+  const arr = [...Array(TASKS.length).keys()];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getDailyTask() {
+  if (state.taskIndex[today] !== undefined) {
+    return TASKS[state.taskIndex[today]];
+  }
+  // Pop next from queue, rebuilding when exhausted
+  if (!state.taskQueue || state.taskQueue.length === 0) {
+    state.taskQueue = buildQueue();
+  }
+  state.taskIndex[today] = state.taskQueue.pop();
+  saveState(state);
+  return TASKS[state.taskIndex[today]];
+}
+
+function refreshDailyTask() {
+  // Pick a different task for today (don't touch the queue)
+  const current = state.taskIndex[today];
+  let newIdx;
+  let attempts = 0;
+  do {
+    newIdx = Math.floor(Math.random() * TASKS.length);
+    attempts++;
+  } while (newIdx === current && attempts < 20);
+  state.taskIndex[today] = newIdx;
+  saveState(state);
+  renderDailyTask();
+  toast('🔄 New task loaded!');
+}
+
+function renderDailyTask() {
+  const t = getDailyTask();
+  const done = (state.habits[today] || []).includes('taskdone');
+  const catMap = {outdoor:'cat-outdoor',creative:'cat-creative',mindful:'cat-mindful',learn:'cat-learn',social:'cat-social',health:'cat-health'};
+  const catLabel = {outdoor:'🌿 Outdoor',creative:'🎨 Creative',mindful:'🧘 Mindful',learn:'📚 Learn',social:'👥 Social',health:'💪 Health'};
+  document.getElementById('dailyTaskCard').innerHTML = `
+    <div class="card task-of-day" style="${done ? 'opacity:0.7;' : ''}">
+      <span class="task-category ${catMap[t.cat]}">${catLabel[t.cat]}</span>
+      <div class="task-title">${t.emoji} ${t.title}</div>
+      <div class="task-desc">${t.desc}</div>
+      ${t.loc ? `<div class="location-tag">📍 ${t.loc}</div>` : ''}
+      ${t.link ? `<br><a href="${t.link}" target="_blank" class="task-link">🔗 ${t.linkText || 'Open link'} ↗</a>` : ''}
+      <div style="margin-top:14px;">
+        <button onclick="markTaskDone()" class="btn btn-sm ${done ? 'btn-outline' : 'btn-green'}" style="width:100%;">
+          ${done ? '✅ Task completed!' : '⭐ Mark as complete'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function markTaskDone() {
+  if (!state.habits[today]) state.habits[today] = [];
+  const idx = state.habits[today].indexOf('taskdone');
+  if (idx === -1) {
+    state.habits[today].push('taskdone');
+    toast('⭐ Task complete — great work!');
+  } else {
+    state.habits[today].splice(idx, 1);
+  }
+  saveState(state);
+  renderDailyTask();
+  renderHabits();
+  updateProgressBar();
+  updateStreakFromHabits();
+  updateStreak();
+}
+
+// ============================================================
+//  HABITS
+// ============================================================
+const HABIT_DEFS = [
+  { id:'water',    emoji:'💧',    name:'Drink 8 glasses of water', sub:'Hydration is everything' },
+  { id:'noalcohol',emoji:'🚫🍺', name:'Alcohol-free day',          sub:'Every day counts' },
+  { id:'taskdone', emoji:'⭐',    name:'Complete today\'s task',    sub:'See Task of the Day above' },
+];
+
+function renderHabits() {
+  const done = state.habits[today] || [];
+  const list = document.getElementById('habitList');
+  list.innerHTML = '';
+  HABIT_DEFS.forEach(h => {
+    const isDone = done.includes(h.id);
+    const div = document.createElement('div');
+    div.className = 'habit-item' + (isDone ? ' habit-done' : '');
+    div.innerHTML = `
+      <div class="habit-check ${isDone ? 'done' : ''}" onclick="toggleHabit('${h.id}')">${isDone ? '✓' : ''}</div>
+      <div class="habit-text">
+        <div class="habit-name">${h.emoji} ${h.name}</div>
+        <div class="habit-sub">${h.sub}</div>
+      </div>`;
+    list.appendChild(div);
+  });
+  updateHabitSummary();
+  updateProgressBar();
+}
+
+function toggleHabit(id) {
+  if (!state.habits[today]) state.habits[today] = [];
+  const idx = state.habits[today].indexOf(id);
+  if (idx === -1) {
+    state.habits[today].push(id);
+    toast('✅ Habit done!');
+  } else {
+    state.habits[today].splice(idx, 1);
+  }
+  saveState(state);
+  renderHabits();
+  renderWeek();
+  updateStreakFromHabits();
+  updateStreak();
+}
+
+function updateHabitSummary() {
+  const done = (state.habits[today] || []).length;
+  document.getElementById('habitSummary').textContent = done + ' / ' + HABIT_DEFS.length + ' done';
+}
+
+function updateProgressBar() {
+  const done = (state.habits[today] || []).length;
+  const pct = (done / 5) * 100;
+  document.getElementById('xpFill').style.width = Math.min(100, pct) + '%';
+  document.getElementById('xpLabel').textContent = done + ' / ' + HABIT_DEFS.length + ' habits';
+}
+
+// ============================================================
+//  IDEAS PAGE
+// ============================================================
+function loadIdeas() {
+  const grid = document.getElementById('ideasGrid');
+  grid.innerHTML = '';
+  // Pick 6 random unique tasks
+  const shuffled = [...TASKS].sort(() => Math.random() - 0.5).slice(0, 8);
+  const catMap = {outdoor:'cat-outdoor',creative:'cat-creative',mindful:'cat-mindful',learn:'cat-learn',social:'cat-social',health:'cat-health'};
+  const catLabel = {outdoor:'🌿 Outdoor',creative:'🎨 Creative',mindful:'🧘 Mindful',learn:'📚 Learn',social:'👥 Social',health:'💪 Health'};
+  shuffled.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '12px';
+    div.innerHTML = `
+      <span class="task-category ${catMap[t.cat]}" style="margin-bottom:8px;">${catLabel[t.cat]}</span>
+      <div class="task-title" style="margin-bottom:6px;">${t.emoji} ${t.title}</div>
+      <div class="task-desc">${t.desc}</div>
+      ${t.loc ? `<div class="location-tag">📍 ${t.loc}</div>` : ''}
+      ${t.link ? `<br><a href="${t.link}" target="_blank" class="task-link">🔗 ${t.linkText || 'Open'} ↗</a>` : ''}
+    `;
+    grid.appendChild(div);
+  });
+}
+
+// ============================================================
+//  LEARN LINKS
+// ============================================================
+function renderLearnLinks() {
+  const div = document.getElementById('learnLinks');
+  div.innerHTML = '';
+  LEARN_LINKS.forEach(l => {
+    div.innerHTML += `
+      <a class="med-card" href="${l.url}" target="_blank">
+        <div class="med-icon">${l.emoji}</div>
+        <div>
+          <div class="med-title">${l.title}</div>
+          <div class="med-sub">${l.desc}</div>
+        </div>
+        <div class="med-duration">↗</div>
+      </a>`;
+  });
+}
+
+// ============================================================
+//  BREATHING TIMER
+// ============================================================
+let breathTimer = null;
+let breathPhaseIdx = 0;
+const breathPhases = [
+  { label:'Breathe IN', duration:4000 },
+  { label:'Hold', duration:4000 },
+  { label:'Breathe OUT', duration:4000 },
+  { label:'Hold', duration:4000 },
+];
+
+function startBreathing() {
+  stopBreathing();
+  breathPhaseIdx = 0;
+  runBreathPhase();
+}
+
+function runBreathPhase() {
+  const phase = breathPhases[breathPhaseIdx % breathPhases.length];
+  const circle = document.getElementById('breathCircle');
+  document.getElementById('breathPhase').textContent = phase.label;
+  circle.textContent = phase.label;
+  if (phase.label === 'Breathe IN') {
+    circle.style.transform = 'scale(1.4)';
+  } else if (phase.label === 'Breathe OUT') {
+    circle.style.transform = 'scale(0.85)';
+  } else {
+    circle.style.transform = 'scale(1.1)';
+  }
+  breathTimer = setTimeout(() => {
+    breathPhaseIdx++;
+    runBreathPhase();
+  }, phase.duration);
+}
+
+function stopBreathing() {
+  clearTimeout(breathTimer);
+  breathTimer = null;
+  const circle = document.getElementById('breathCircle');
+  circle.textContent = 'Press Start';
+  circle.style.transform = 'scale(1)';
+  document.getElementById('breathPhase').textContent = '4-4-4-4 box breathing';
+}
+
+// ============================================================
+//  ALCOHOL TRACKER
+// ============================================================
+function getSoberDays() {
+  if (!state.soberSince) return 0;
+  return daysBetween(state.soberSince, today);
+}
+
+function addDrink() {
+  document.getElementById('modalMotivation').textContent =
+    DRINK_MOTIVATIONS[Math.floor(Math.random() * DRINK_MOTIVATIONS.length)];
+  document.getElementById('drinkModal').classList.add('open');
+}
+
+function closeDrinkModal() {
+  document.getElementById('drinkModal').classList.remove('open');
+}
+
+function confirmDrink() {
+  closeDrinkModal();
+  if (!state.drinks[today]) state.drinks[today] = 0;
+  state.drinks[today]++;
+  state.soberSince = null; // reset streak — will recalculate from last alcohol-free run
+  // find new sober since
+  recalcSoberSince();
+  saveState(state);
+  renderAlcohol();
+  toast('Logged. Remember — tomorrow is a fresh start 💚');
+}
+
+function removeDrink() {
+  if ((state.drinks[today] || 0) === 0) return;
+  state.drinks[today]--;
+  if (state.drinks[today] === 0) {
+    delete state.drinks[today];
+    recalcSoberSince();
+  }
+  saveState(state);
+  renderAlcohol();
+}
+
+function recalcSoberSince() {
+  // Walk backwards to find last drink day
+  let d = new Date();
+  for (let i = 0; i < 365; i++) {
+    const ds = d.toISOString().split('T')[0];
+    if (state.drinks[ds] > 0) {
+      // last drink was this day, sober since tomorrow
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      state.soberSince = next.toISOString().split('T')[0];
+      return;
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  // No drinks found in a year
+  state.soberSince = new Date(Date.now() - 365 * 86400000).toISOString().split('T')[0];
+}
+
+function renderAlcohol() {
+  // ensure soberSince is set
+  if (!state.soberSince) {
+    const todayDrinks = state.drinks[today] || 0;
+    if (todayDrinks === 0) {
+      state.soberSince = today;
+      saveState(state);
+    }
+  }
+
+  const soberDays = getSoberDays();
+  document.getElementById('soberDays').textContent = soberDays;
+  document.getElementById('drinkCount').textContent = state.drinks[today] || 0;
+
+  // Motivation
+  const todayCount = state.drinks[today] || 0;
+  const motIdx = todayCount === 0 ? Math.floor(Math.random() * DRINK_MOTIVATIONS.length) : (todayCount - 1) % DRINK_MOTIVATIONS.length;
+  document.getElementById('drinkMotivation').textContent = DRINK_MOTIVATIONS[motIdx];
+
+  // Mini card on home
+  document.getElementById('soberMiniDays').textContent = soberDays === 0 ? 'Alcohol-free today 🎉' : soberDays + ' days alcohol-free! 🎉';
+  document.getElementById('soberMiniMsg').textContent = soberDays >= 7 ? 'That\'s incredible — keep going!' : soberDays > 0 ? 'Great work Kirstie!' : 'Every day counts!';
+
+  // Benefits
+  const bDiv = document.getElementById('benefitsDisplay');
+  bDiv.innerHTML = '';
+  BENEFITS.forEach(b => {
+    const achieved = soberDays >= b.days;
+    bDiv.innerHTML += `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);opacity:${achieved ? 1 : 0.4}">
+        <div style="font-size:1.4rem;">${achieved ? b.icon : '🔒'}</div>
+        <div style="font-size:0.82rem;${achieved ? 'font-weight:600;' : ''}">${b.text}</div>
+        ${achieved ? '<div style="margin-left:auto;font-size:0.75rem;background:var(--green-pale);color:var(--green-dark);padding:2px 8px;border-radius:10px;font-weight:700;">✓</div>' : ''}
+      </div>`;
+  });
+
+  // Weekly log
+  const wDiv = document.getElementById('weeklyDrinkLog');
+  wDiv.innerHTML = '';
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const count = state.drinks[ds] || 0;
+    const isToday = i === 0;
+    wDiv.innerHTML += `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:0.78rem;color:var(--muted);width:70px;">${fmt(ds)}</div>
+        <div style="flex:1;background:var(--green-pale);border-radius:4px;height:8px;overflow:hidden;">
+          <div style="width:${Math.min(100, count * 15)}%;height:100%;background:${count === 0 ? 'var(--green-light)' : 'var(--red)'};border-radius:4px;"></div>
+        </div>
+        <div style="font-size:0.82rem;font-weight:700;color:${count === 0 ? 'var(--green-mid)' : 'var(--red)'}">
+          ${count === 0 ? '✅' : count + ' drink' + (count > 1 ? 's' : '')}
+        </div>
+      </div>`;
+  }
+}
+
+// ============================================================
+//  MOUNJARO
+// ============================================================
+function setInjDateTimeNow() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const local = new Date(now.getTime() - offset * 60000);
+  document.getElementById('injDateTime').value = local.toISOString().slice(0, 16);
+}
+
+function logInjection() {
+  const dt = document.getElementById('injDateTime').value;
+  const dose = document.getElementById('injDose').value;
+  if (!dt) { toast('⚠️ Please select a date and time'); return; }
+  state.injections.unshift({ dt, dose: parseFloat(dose), ts: new Date(dt).getTime() });
+  saveState(state);
+  renderMounjaro();
+  toast('💉 Injection logged!');
+}
+
+function clearInjections() {
+  if (!confirm('Clear all injection history?')) return;
+  state.injections = [];
+  saveState(state);
+  renderMounjaro();
+}
+
+function renderMounjaro() {
+  // Next injection
+  const nextCard = document.getElementById('nextInjCard');
+  const nextDate = document.getElementById('nextInjDate');
+  const nextCountdown = document.getElementById('nextInjCountdown');
+
+  if (state.injections.length > 0) {
+    const last = state.injections[0];
+    const nextTs = new Date(last.dt).getTime() + 7 * 24 * 60 * 60 * 1000;
+    const nextD = new Date(nextTs);
+    nextDate.textContent = nextD.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long'});
+    const daysLeft = Math.ceil((nextTs - Date.now()) / 86400000);
+    if (daysLeft <= 0) {
+      nextCountdown.textContent = '⚠️ Due today or overdue!';
+      nextCard.style.background = 'linear-gradient(135deg, #ffe0e0, #ffb3b3)';
+    } else if (daysLeft === 1) {
+      nextCountdown.textContent = '🔔 Due tomorrow!';
+    } else {
+      nextCountdown.textContent = `In ${daysLeft} day${daysLeft > 1 ? 's' : ''}`;
+    }
+  } else {
+    nextDate.textContent = 'Log your first injection below';
+    nextCountdown.textContent = '';
+  }
+
+  // History
+  const hist = document.getElementById('injectionHistory');
+  if (state.injections.length === 0) {
+    hist.innerHTML = '<div class="empty-state"><div class="icon">💉</div><p>No injections logged yet</p></div>';
+    return;
+  }
+  hist.innerHTML = '';
+  state.injections.forEach((inj, i) => {
+    hist.innerHTML += `
+      <div class="inj-item">
+        <div class="inj-dot"></div>
+        <div style="flex:1;">
+          <div style="font-weight:600;">${fmtFull(inj.dt)}</div>
+          <div class="inj-dose">${inj.dose} mg</div>
+        </div>
+        <button onclick="deleteInjection(${i})" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);">🗑️</button>
+      </div>`;
+  });
+}
+
+function deleteInjection(i) {
+  state.injections.splice(i, 1);
+  saveState(state);
+  renderMounjaro();
+  toast('Deleted');
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+async function init() {
+  initTopBar();
+  initSupabase();
+
+  // Try loading fresher data from cloud
+  const cloudState = await loadStateFromCloud();
+  if (cloudState) {
+    applyDefaults(cloudState);
+    state = cloudState;
+    localStorage.setItem('mbWellbeing', JSON.stringify(state));
+  }
+
+  // Ensure soberSince is set
+  if (!state.soberSince) {
+    state.soberSince = today;
+    saveState(state);
+  }
+
+  renderAll();
+  setInjDateTimeNow();
+  renderLearnLinks();
+}
+
+init();
+</script>
+</body>
+</html>
